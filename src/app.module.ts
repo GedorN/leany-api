@@ -10,6 +10,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { Project } from './projects/entities/project.entity';
 import { EmployeeProject } from './projects/entities/employee-project.entity';
 import { EmployeeProfile } from './employees/entities/employee-profile.entity';
+import { UtilsModule } from './utils/utils.module';
 
 
 
@@ -23,11 +24,12 @@ import { EmployeeProfile } from './employees/entities/employee-profile.entity';
       password: 'employee_pass',
       database: 'employee_manager',
       entities: [Employee, EmployeeProfile, Department, Project, EmployeeProject],
-      synchronize: false, // more control over the table.
+      synchronize: true,
     }),
     EmployeesModule,
     DepartmentsModule,
     ProjectsModule,
+    UtilsModule,
   ],
 })
 export class AppModule {}
