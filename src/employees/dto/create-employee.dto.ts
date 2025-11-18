@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsString, Min, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class CreateEmployeeDto {
     @ApiProperty({ example: 'John Doe' })
@@ -20,5 +20,10 @@ export class CreateEmployeeDto {
     @ApiProperty({ example: true })
     @IsBoolean()
     isActive: boolean;
+
+    @ApiPropertyOptional({ example: 1, description: 'Department ID' })
+    @IsOptional()
+    @IsInt()
+    departmentId?: number | null;
 
 }

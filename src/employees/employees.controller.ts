@@ -3,6 +3,11 @@ import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CreateEmployeeProfileDto } from './dto/create-employee-profile.dto';
+import { UpdateEmployeeProfileDto } from './dto/update-employee-profile.dto';
+import { EmployeeDetailsDto } from './dto/employee-details.dto';
+import { ApiOkResponse } from '@nestjs/swagger';
+
 
 
 @Controller('employees')
@@ -43,4 +48,44 @@ export class EmployeesController {
     this.employeesService.remove(id);
     return { message: `Employee ${id} removed` };
   }
+
+  @Post(':id/profile')
+  @ApiOperation({ summary: 'Create an employee profile' })
+  createProfile(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateEmployeeProfileDto,
+  ) {
+    return this.employeesService.createProfile(id, dto);
+  }
+
+  @Get(':id/profile')
+  @ApiOperation({ summary: 'Search employee profile by ID' })
+  getProfile(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getProfile(id);
+  }
+
+  @Patch(':id/profile')
+  @ApiOperation({ summary: 'Update an employee profile' })
+  updateProfile(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateEmployeeProfileDto,
+  ) {
+    return this.employeesService.updateProfile(id, dto);
+  }
+
+  @Delete(':id/profile')
+  @ApiOperation({ summary: 'Remove an employee profile' })
+  deleteProfile(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.deleteProfile(id);
+  }
+
+  @Get(':id/details')
+  @ApiOperation({
+    summary: 'Return an employee with full data',
+  })
+  @ApiOkResponse({ type: EmployeeDetailsDto })
+  getDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getDetails(id);
+  }
+
 }
