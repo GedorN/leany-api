@@ -1,99 +1,345 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Employee Manager API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API de gestão de funcionários, departamentos e projetos construída em **NestJS**, usando **PostgreSQL** e integrando com serviços externos como **PokeAPI** e **ViaCEP**.  
+O projeto segue uma arquitetura em camadas (Controllers → Services → Repositories), com **DTOs**, **Models de domínio** e **validação de permissões** via decorators e guards.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## 🚀 Como rodar o projeto (API + Banco de Dados)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### 1. Pré-requisitos
 
-## Project setup
+- **Node.js** ≥ 20
+- **Yarn** instalado globalmente
+- **Docker** e **Docker Compose** instalados
+- (Opcional) Cliente SQL como **DBeaver**, **TablePlus**, **psql** etc.
+
+
+
+### 2. Clonar o repositório e instalar dependências
 
 ```bash
-$ yarn install
+git clone <URL_DO_REPOSITÓRIO>
+cd employee-manager
+
+
+yarn
+# ou, se preferir:
+# npm install
+
+yarn db:up # para iniciar o banco de dados
+yarn start:dev # para iniciar o projeto NestJs
 ```
 
-## Compile and run the project
+## ✨ Funcionalidades
 
-```bash
-# development
-$ yarn run start
+### Domínio principal
 
-# watch mode
-$ yarn run start:dev
+- **Employees**
+  - CRUD de funcionários
+  - Associação a **Departments** (1:N)
+  - Associação a **Projects** (N:N)
+  - **EmployeeProfile** (1:1)
+  - Endpoint de **detalhes completos**:
+    - Employee + Profile + Department + Projects
 
-# production mode
-$ yarn run start:prod
+- **Departments**
+  - CRUD de departamentos
+
+- **Projects**
+  - CRUD de projetos
+  - Vínculo de funcionários aos projetos (N:N)
+  - Listagem de funcionários de um projeto
+
+### Utils
+
+- **PokeAPI**
+  - `GET /utils/pokemon`
+  - Filtros:
+    - `page`, `limit`
+    - `name` (contém)
+    - `type` (fire, water, grass, etc.)
+  - Paginação após filtro, tanto por tipo quanto por nome.
+
+- **CEP (ViaCEP)**
+  - `GET /utils/cep/:cep`
+  - Consulta CEP em serviço externo e retorna endereço estruturado.
+
+### Segurança / Permissões
+
+- Decorator `@Roles(...)` para declarar roles exigidas na rota
+- `RolesGuard` global que lê as roles e valida acesso
+- Role simulada via header **`x-user-role`** (ex.: `admin`, `manager`, `user`)
+- Integração com Swagger para testar facilmente esse header
+
+
+## 🏗 Arquitetura
+
+O projeto segue uma arquitetura em camadas, inspirada em MVC, com isolamento de responsabilidades:
+
+- **Controllers**
+  - Camada de borda (HTTP)
+  - Recebem DTOs de entrada
+  - Retornam DTOs de saída
+  - Declarar permissões via `@Roles(...)`
+
+- **Services**
+  - Contêm **regras de negócio**
+  - Trabalham com **Models de domínio** (e não com Entities do TypeORM)
+  - Orquestram chamadas a múltiplos Repositories e integrações externas
+
+- **Repositories**
+  - ÚNICA camada que conhece as **Entities** do TypeORM
+  - Fazem acesso ao banco (PostgreSQL) via `Repository<Entity>`
+  - Convertem **Entities → Domain Models** e vice-versa
+  - Regra: **nenhuma Entity sai do repositório**
+
+- **Domain Models**
+  - Objetos de domínio, usados apenas na camada de Service
+  - Ex.: `EmployeeModel`, `EmployeeProfileModel`, `DepartmentModel`, `ProjectModel`, `EmployeeDetailsModel`
+
+- **DTOs**
+  - Objetos de transferência para a API (entrada/saída)
+  - `Create*Dto`, `Update*Dto` com `class-validator`
+  - `*ResponseDto` para saída, com métodos `fromModel(...)`
+
+
+## 📂 Estrutura de pastas (resumo)
+
+```text
+src/
+  app.module.ts
+  main.ts
+
+  employees/
+    domain/
+      employee.model.ts
+      employee-profile.model.ts
+      employee-details.model.ts
+    dto/
+      create-employee.dto.ts
+      update-employee.dto.ts
+      employee-response.dto.ts
+      create-employee-profile.dto.ts
+      update-employee-profile.dto.ts
+      employee-profile-response.dto.ts
+      employee-details-response.dto.ts
+    entities/
+      employee.entity.ts
+      employee-profile.entity.ts
+    repositories/
+      employees.repository.ts
+      employee-profiles.repository.ts
+    employees.controller.ts
+    employees.service.ts
+
+  departments/
+    domain/
+      department.model.ts
+    dto/
+      create-department.dto.ts
+      update-department.dto.ts
+      department-response.dto.ts
+    entities/
+      department.entity.ts
+    repositories/
+      departments.repository.ts
+    departments.controller.ts
+    departments.service.ts
+    departments.module.ts
+
+  projects/
+    domain/
+      project.model.ts
+    dto/
+      create-project.dto.ts
+      update-project.dto.ts
+      project-response.dto.ts
+    entities/
+      project.entity.ts
+      employee-project.entity.ts
+    repositories/
+      projects.repository.ts
+    projects.controller.ts
+    projects.service.ts
+    projects.module.ts
+
+  utils/
+    utils.module.ts
+    pokemon/
+      dto/
+        search-pokemon.dto.ts
+      pokemon.controller.ts
+      pokemon.service.ts
+    cep/
+      dto/
+        cep-response.dto.ts
+      cep.controller.ts
+      cep.service.ts
+
+  auth/
+    roles.decorator.ts
+    roles.guard.ts
 ```
 
-## Run tests
+## 🧭 Como acessar e usar o Swagger
 
-```bash
-# unit tests
-$ yarn run test
+A documentação interativa da API está disponível em:
 
-# e2e tests
-$ yarn run test:e2e
+> **URL:** `http://localhost:3000/api`
 
-# test coverage
-$ yarn run test:cov
+Com a aplicação rodando (`yarn start:dev`), basta abrir esse endereço no navegador.
+
+### 1. Visão geral da UI
+
+No Swagger você vai ver:
+
+- As **tags** da API (por exemplo: `employees`, `departments`, `projects`, `utils`)
+- Cada **endpoint** listado com:
+  - Método HTTP (`GET`, `POST`, `PATCH`, `DELETE`)
+  - URL
+  - Descrição (`summary`)
+  - Parâmetros, body e schema de resposta
+- Um botão **“Try it out”** em cada rota para executar a requisição direto pelo navegador.
+
+### 2. Configurando permissões (x-user-role)
+
+Alguns endpoints exigem roles específicas através do decorator `@Roles(...)`.  
+No ambiente atual, a role é simulada via header **`x-user-role`**.
+
+Para testar isso pelo Swagger:
+
+1. Clique em **Authorize** (no topo direito da página).
+2. Vai aparecer um campo de segurança com o nome `x-user-role`.
+3. Preencha com um valor, por exemplo:
+   - `admin`
+   - `manager`
+   - `user`
+4. Clique em **Authorize** e depois em **Close**.
+
+A partir desse momento, **todas as requisições feitas no Swagger** vão incluir o header:
+
+```http
+x-user-role: <valor que você informou>
 ```
 
-## Deployment
+## 🗄️ Estrutura do Banco de Dados
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+A aplicação utiliza **PostgreSQL** como banco relacional, com mapeamento feito via **TypeORM**.  
+O modelo foi pensado para demonstrar relações **1:1**, **1:N** e **N:N** entre entidades.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
-```bash
-$ yarn install -g mau
-$ mau deploy
-```
+![Database diagram](db-diagram.png)
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Tabelas principais
 
-## Resources
+#### `employees`
 
-Check out a few resources that may come in handy when working with NestJS:
+Tabela principal de funcionários.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- `id` (**PK**, `SERIAL`)
+- `name` (`VARCHAR(255)`, **NOT NULL**)
+- `role` (`VARCHAR(255)`, **NOT NULL**)
+- `salary` (`NUMERIC(12,2)`, **NOT NULL**)
+- `is_active` (`BOOLEAN`, **NOT NULL**, default `TRUE`)
+- `department_id` (`INTEGER`, `NULLABLE`)
+  - **FK** → `departments.id`
+  - `ON DELETE SET NULL`
 
-## Support
+**Relações:**
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- **1:N** – Muitos `employees` para um `department`
+- **1:1** (via outra tabela) – `employee` ↔ `employee_profiles`
+- **N:N** – `employee` ↔ `projects` (via `employee_projects`)
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### `employee_profiles`
 
-## License
+Tabela de perfil do funcionário (dados adicionais).
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- `id` (`INTEGER`, **PK**)  
+  - mesmo valor de `employees.id` (espelha o ID do funcionário)
+- `employee_id` (`INTEGER`, **UNIQUE**, **NOT NULL**)
+  - **FK** → `employees.id`
+  - `ON DELETE CASCADE`
+- `birth_date` (`DATE`, `NULLABLE`)
+- `document` (`VARCHAR(50)`, `NULLABLE`)
+- `address` (`TEXT`, `NULLABLE`)
+
+**Relação 1:1:**
+
+- Um `employee` tem no máximo **um** `employee_profile`.
+- O `employee_profile` é apagado automaticamente se o `employee` for removido (`ON DELETE CASCADE`).
+
+---
+
+#### `departments`
+
+Tabela de departamentos da empresa.
+
+- `id` (`SERIAL`, **PK**)
+- `name` (`VARCHAR(255)`, **NOT NULL**)
+- `description` (`TEXT`, `NULLABLE`)
+
+**Relação 1:N:**
+
+- Um `department` pode ter **vários** `employees`.
+- Quando um departamento é removido:
+  - `employees.department_id` é setado para `NULL` (`ON DELETE SET NULL`), mantendo o histórico do funcionário sem departamento.
+
+---
+
+#### `projects`
+
+Tabela de projetos.
+
+- `id` (`SERIAL`, **PK**)
+- `name` (`VARCHAR(255)`, **NOT NULL**)
+- `description` (`TEXT`, `NULLABLE`)
+- `start_date` (`DATE`, `NULLABLE`)
+- `end_date` (`DATE`, `NULLABLE`)
+
+**Relações:**
+
+- Participa de uma relação **N:N** com `employees` via `employee_projects`.
+
+---
+
+#### `employee_projects`
+
+Tabela de junção para a relação **N:N** entre `employees` e `projects`.
+
+- `employee_id` (`INTEGER`, **NOT NULL**)
+  - **FK** → `employees.id`
+  - `ON DELETE CASCADE`
+- `project_id` (`INTEGER`, **NOT NULL**)
+  - **FK** → `projects.id`
+  - `ON DELETE CASCADE`
+- `joined_at` (`TIMESTAMP`, default `NOW()`)
+- `left_at` (`TIMESTAMP`, `NULLABLE`)
+
+**Chave primária composta:**
+
+- `PRIMARY KEY (employee_id, project_id)`
+
+Isso garante que:
+
+- Um mesmo `employee` não pode ser cadastrado duas vezes no mesmo `project`.
+- Se um `employee` ou `project` for deletado, os vínculos correspondentes são apagados automaticamente.
+
+---
+
+### Resumo das relações
+
+- **1:1**
+  - `employees` ↔ `employee_profiles`
+- **1:N**
+  - `departments` → `employees`
+- **N:N**
+  - `employees` ↔ `projects` via `employee_projects`
+
+Essa estrutura é a base para os endpoints de:
+
+- Detalhes do funcionário (`GET /employees/:id/details`)
+- Vínculo de funcionário a projeto (`POST /projects/:projectId/employees/:employeeId`)
+- Listagem de funcionários de um projeto (`GET /projects/:projectId/employees`)
