@@ -1,124 +1,82 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+// src/projects/projects.service.ts
+import { Injectable } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
-  import { UpdateProjectDto } from './dto/update-project.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Project } from './entities/project.entity';
-import { EmployeeProject } from './entities/employee-project.entity';
-import { Employee } from '../employees/entities/employee.entity';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { ProjectsRepository } from './repositories/projects.repository';
+import { ProjectModel } from './domain/project.model';
+import { EmployeeModel } from '../employees/domain/employee.model';
 
 @Injectable()
 export class ProjectsService {
-  constructor(
-    @InjectRepository(Project)
-    private readonly projectRepo: Repository<Project>,
-    @InjectRepository(EmployeeProject)
-    private readonly employeeProjectRepo: Repository<EmployeeProject>,
-    @InjectRepository(Employee)
-    private readonly employeeRepo: Repository<Employee>,
-  ) {}
+  constructor(private readonly projectsRepo: ProjectsRepository) {}
 
-  create(dto: CreateProjectDto): Promise<Project> {
-    const project = this.projectRepo.create(dto);
-    return this.projectRepo.save(project);
+  create(dto: CreateProjectDto): Promise<ProjectModel> {
+    return this.projectsRepo.create({
+      name: dto.name,
+      description: dto.description ?? null,
+      startDate: dto.startDate ?? null,
+      endDate: dto.endDate ?? null,
+    });
   }
 
-  findAll(): Promise<Project[]> {
-    return this.projectRepo.find();
+  findAll(): Promise<ProjectModel[]> {
+    return this.projectsRepo.findAll();
   }
 
-  async findOne(id: number): Promise<Project> {
-    const project = await this.projectRepo.findOne({ where: { id } });
+  findOne(id: number): Promise<ProjectModel> {
+    return this.projectsRepo.findById(id).then((project) => {
+      if (!project) {
+        throw new Error(`Project with id ${id} not found`);
+      }
+      return project;
+    });
+  }
 
-    if (!project) {
-      throw new NotFoundException(`Project with id ${id} not found`);
+  async update(
+    id: number,
+    dto: UpdateProjectDto,
+  ): Promise<ProjectModel> {
+    const updated = await this.projectsRepo.update(id, {
+      name: dto.name,
+      description:
+        dto.description !== undefined ? dto.description : undefined,
+      startDate:
+        dto.startDate !== undefined ? dto.startDate : undefined,
+      endDate: dto.endDate !== undefined ? dto.endDate : undefined,
+    });
+
+    if (!updated) {
+      throw new Error(`Project with id ${id} not found`);
     }
 
-    return project;
-  }
-
-  async update(id: number, dto: UpdateProjectDto): Promise<Project> {
-    const project = await this.findOne(id);
-    const merged = this.projectRepo.merge(project, dto);
-    return this.projectRepo.save(merged);
+    return updated;
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.projectRepo.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Project with id ${id} not found`);
+    const ok = await this.projectsRepo.delete(id);
+    if (!ok) {
+      throw new Error(`Project with id ${id} not found`);
     }
   }
 
-  async addEmployeeToProject(
-    projectId: number,
-    employeeId: number,
-  ): Promise<EmployeeProject> {
-    const project = await this.projectRepo.findOne({ where: { id: projectId } });
-    if (!project) {
-      throw new NotFoundException(`Project with id ${projectId} not found`);
-    }
-
-    const employee = await this.employeeRepo.findOne({
-      where: { id: employeeId },
-    });
-    if (!employee) {
-      throw new NotFoundException(`Employee with id ${employeeId} not found`);
-    }
-
-    const existing = await this.employeeProjectRepo.findOne({
-      where: { projectId, employeeId },
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        `Employee ${employeeId} is already in project ${projectId}`,
-      );
-    }
-
-    const ep = this.employeeProjectRepo.create({
-      projectId,
-      employeeId,
-    });
-
-    return this.employeeProjectRepo.save(ep);
-  }
-
-  async removeEmployeeFromProject(
+  addEmployeeToProject(
     projectId: number,
     employeeId: number,
   ): Promise<void> {
-    const result = await this.employeeProjectRepo.delete({
-      projectId,
-      employeeId,
-    });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(
-        `Employee ${employeeId} is not in project ${projectId}`,
-      );
-    }
+    return this.projectsRepo.addEmployeeToProject(projectId, employeeId);
   }
 
-  async listEmployeesInProject(projectId: number): Promise<Employee[]> {
-    const project = await this.projectRepo.findOne({
-      where: { id: projectId },
-    });
+  removeEmployeeFromProject(
+    projectId: number,
+    employeeId: number,
+  ): Promise<void> {
+    return this.projectsRepo.removeEmployeeFromProject(
+      projectId,
+      employeeId,
+    );
+  }
 
-    if (!project) {
-      throw new NotFoundException(`Project with id ${projectId} not found`);
-    }
-
-    const relations = await this.employeeProjectRepo.find({
-      where: { projectId },
-      relations: ['employee'],
-    });
-
-    return relations.map((r) => r.employee);
+  listEmployeesInProject(projectId: number): Promise<EmployeeModel[]> {
+    return this.projectsRepo.listEmployeesInProject(projectId);
   }
 }

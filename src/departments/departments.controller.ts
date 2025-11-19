@@ -1,3 +1,4 @@
+// src/departments/departments.controller.ts
 import {
   Controller,
   Get,
@@ -11,7 +12,13 @@ import {
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+} from '@nestjs/swagger';
+import { DepartmentResponseDto } from './dto/department-response.dto';
 
 @ApiTags('departments')
 @Controller('departments')
@@ -20,34 +27,46 @@ export class DepartmentsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new department' })
-  create(@Body() dto: CreateDepartmentDto) {
-    return this.departmentsService.create(dto);
+  @ApiCreatedResponse({ type: DepartmentResponseDto })
+  async create(
+    @Body() dto: CreateDepartmentDto,
+  ): Promise<DepartmentResponseDto> {
+    const model = await this.departmentsService.create(dto);
+    return DepartmentResponseDto.fromModel(model);
   }
 
   @Get()
   @ApiOperation({ summary: 'List all departments' })
-  findAll() {
-    return this.departmentsService.findAll();
+  @ApiOkResponse({ type: DepartmentResponseDto, isArray: true })
+  async findAll(): Promise<DepartmentResponseDto[]> {
+    const models = await this.departmentsService.findAll();
+    return models.map(DepartmentResponseDto.fromModel);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Search a department by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.departmentsService.findOne(id);
+  @ApiOkResponse({ type: DepartmentResponseDto })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DepartmentResponseDto> {
+    const model = await this.departmentsService.findOne(id);
+    return DepartmentResponseDto.fromModel(model);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a department' })
-  update(
+  @ApiOkResponse({ type: DepartmentResponseDto })
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDepartmentDto,
-  ) {
-    return this.departmentsService.update(id, dto);
+  ): Promise<DepartmentResponseDto> {
+    const model = await this.departmentsService.update(id, dto);
+    return DepartmentResponseDto.fromModel(model);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Removes a department' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.departmentsService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.departmentsService.remove(id);
   }
 }

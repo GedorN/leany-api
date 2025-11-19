@@ -10,67 +10,94 @@ import { UpdateEmployeeProfileDto } from './dto/update-employee-profile.dto';
 import { Department } from 'src/departments/entities/department.entity';
 import { EmployeeProject } from '../projects/entities/employee-project.entity';
 import { EmployeeDetailsDto } from './dto/employee-details.dto';
+import { EmployeesRepository } from './repositories/employees.repository';
+import { EmployeeModel } from './domain/employee.model';
+import { EmployeeProfilesRepository } from './repositories/employee-profiles.repository';
+import { EmployeeProfileModel } from './domain/employee-profile.model';
+import { EmployeeDetailsModel } from './domain/employee-details.model';
+import { DepartmentsRepository } from '../departments/repositories/departments.repository';
+import { ProjectsRepository } from '../projects/repositories/projects.repository';
 
 
 @Injectable()
 export class EmployeesService {
   constructor(
-    @InjectRepository(Employee)
-    private readonly employeeRepo: Repository<Employee>,
-    @InjectRepository(Department)
-    private readonly departmentRepo: Repository<Department>,
-    @InjectRepository(EmployeeProfile)
-    private readonly profileRepo: Repository<EmployeeProfile>,
+    private readonly employeesRepo: EmployeesRepository,
+    private readonly departmentsRepo: DepartmentsRepository,
+    private readonly employeeProfilesRepo: EmployeeProfilesRepository,
+    private readonly projectsRepo: ProjectsRepository,
   ) {}
 
-  async create(dto: CreateEmployeeDto): Promise<Employee> {
-    const employee = this.employeeRepo.create({
+  private async ensureDepartmentExists(departmentId: number): Promise<void> {
+    const dep = await this.departmentsRepo.findById(departmentId)
+
+    if (!dep) {
+      throw new BadRequestException(
+        `Department with id ${departmentId} does not exist`,
+      );
+    }
+  }
+
+
+   async create(dto: CreateEmployeeDto): Promise<EmployeeModel> {
+    if (dto.departmentId != null) {
+      await this.ensureDepartmentExists(dto.departmentId);
+    }
+
+    return this.employeesRepo.create({
       name: dto.name,
       role: dto.role,
       salary: dto.salary,
       isActive: dto.isActive,
-      departmentId: dto.departmentId ?? null, // <<< aqui
+      departmentId: dto.departmentId ?? null,
     });
-
-    return this.employeeRepo.save(employee);
   }
 
-   findAll(): Promise<Employee[]> {
-    return this.employeeRepo.find();
+  async findAll(): Promise<EmployeeModel[]> {
+    return this.employeesRepo.findAll();
   }
 
-  async findOne(id: number): Promise<Employee> {
-    const employee = await this.employeeRepo.findOne({ where: { id } });
-
+  async findOne(id: number): Promise<EmployeeModel> {
+    const employee = await this.employeesRepo.findById(id);
     if (!employee) {
       throw new NotFoundException(`Employee with id ${id} not found`);
     }
-
     return employee;
   }
 
   async update(
     id: number,
-    updateEmployeeDto: UpdateEmployeeDto,
-  ): Promise<Employee> {
-    const employee = await this.findOne(id);
+    dto: UpdateEmployeeDto,
+  ): Promise<EmployeeModel> {
+    if (dto.departmentId !== undefined && dto.departmentId !== null) {
+      await this.ensureDepartmentExists(dto.departmentId);
+    }
 
-    const updated = this.employeeRepo.merge(employee, updateEmployeeDto);
-    return this.employeeRepo.save(updated);
+    const updated = await this.employeesRepo.update(id, {
+      name: dto.name,
+      role: dto.role,
+      salary: dto.salary,
+      isActive: dto.isActive,
+      departmentId:
+        dto.departmentId !== undefined ? dto.departmentId : undefined,
+    });
+
+    if (!updated) {
+      throw new NotFoundException(`Employee with id ${id} not found`);
+    }
+
+    return updated;
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.employeeRepo.delete(id);
-
-    if (result.affected === 0) {
+    const ok = await this.employeesRepo.delete(id);
+    if (!ok) {
       throw new NotFoundException(`Employee with id ${id} not found`);
     }
   }
 
-  async getProfile(employeeId: number): Promise<EmployeeProfile> {
-    const profile = await this.profileRepo.findOne({
-      where: { employeeId },
-    });
+  async getProfile(employeeId: number): Promise<EmployeeProfileModel> {
+    const profile = await this.employeeProfilesRepo.findByEmployeeId(employeeId);
 
     if (!profile) {
       throw new NotFoundException(
@@ -84,88 +111,74 @@ export class EmployeesService {
   async createProfile(
     employeeId: number,
     dto: CreateEmployeeProfileDto,
-  ): Promise<EmployeeProfile> {
-    const employee = await this.employeeRepo.findOne({ where: { id: employeeId } });
-
+  ): Promise<EmployeeProfileModel> {
+    const employee = await this.employeesRepo.findById(employeeId);
     if (!employee) {
       throw new NotFoundException(`Employee with id ${employeeId} not found`);
     }
 
-    const existing = await this.profileRepo.findOne({ where: { employeeId } });
+    const existing = await this.employeeProfilesRepo.findByEmployeeId(employeeId);
     if (existing) {
       throw new BadRequestException(
         `Employee ${employeeId} already has a profile`,
       );
     }
 
-    const profile = this.profileRepo.create({
-      id: employeeId,
-      employeeId,
-      ...dto,
-      employee,
+    return this.employeeProfilesRepo.createForEmployee(employeeId, {
+      birthDate: dto.birthDate,
+      document: dto.document,
+      address: dto.address,
     });
-
-    return this.profileRepo.save(profile);
   }
+
 
   async updateProfile(
     employeeId: number,
     dto: UpdateEmployeeProfileDto,
-  ): Promise<EmployeeProfile> {
-    const profile = await this.profileRepo.findOne({
-      where: { employeeId },
+  ): Promise<EmployeeProfileModel> {
+    const updated = await this.employeeProfilesRepo.updateForEmployee(employeeId, {
+      birthDate: dto.birthDate,
+      document: dto.document,
+      address: dto.address,
     });
 
-    if (!profile) {
+    if (!updated) {
       throw new NotFoundException(
         `Profile for employee ${employeeId} not found`,
       );
     }
 
-    const merged = this.profileRepo.merge(profile, dto);
-    return this.profileRepo.save(merged);
+    return updated;
   }
 
   async deleteProfile(employeeId: number): Promise<void> {
-    const result = await this.profileRepo.delete({ employeeId });
-
-    if (result.affected === 0) {
+    const ok = await this.employeeProfilesRepo.deleteForEmployee(employeeId);
+    if (!ok) {
       throw new NotFoundException(
         `Profile for employee ${employeeId} not found`,
       );
     }
   }
 
-  async getDetails(id: number): Promise<EmployeeDetailsDto> {
-    const employee = await this.employeeRepo.findOne({
-      where: { id },
-      relations: [
-        'profile',
-        'department',
-        'employeeProjects',
-        'employeeProjects.project',
-      ],
-    });
-
+    async getDetails(id: number): Promise<EmployeeDetailsModel> {
+    const employee = await this.employeesRepo.findById(id);
     if (!employee) {
       throw new NotFoundException(`Employee with id ${id} not found`);
     }
 
-    const projects =
-      employee.employeeProjects?.map((ep) => ep.project).filter(Boolean) ?? [];
+    const profile =
+      (await this.employeeProfilesRepo.findByEmployeeId(id)) ?? null;
 
-    const details: EmployeeDetailsDto = {
-      id: employee.id,
-      name: employee.name,
-      role: employee.role,
-      salary: employee.salary,
-      isActive: employee.isActive,
-      department: employee.department ?? null,
-      profile: employee.profile ?? null,
-      projects,
-    };
+    let department = null;
+    if (employee.departmentId != null) {
+      department =
+        (await this.departmentsRepo.findById(employee.departmentId)) ?? null;
+    }
 
-    return details;
+    const projects = await this.projectsRepo.listProjectsForEmployee(id);
+
+    return new EmployeeDetailsModel(employee, profile, department, projects);
   }
+
 
 }

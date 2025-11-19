@@ -1,3 +1,4 @@
+// src/projects/projects.controller.ts
 import {
   Controller,
   Get,
@@ -11,7 +12,15 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+} from '@nestjs/swagger';
+import { ProjectResponseDto } from './dto/project-response.dto';
+import { EmployeeResponseDto } from '../employees/dto/employee-response.dto';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -20,53 +29,68 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
-  create(@Body() dto: CreateProjectDto) {
-    return this.projectsService.create(dto);
+  @ApiCreatedResponse({ type: ProjectResponseDto })
+  async create(
+    @Body() dto: CreateProjectDto,
+  ): Promise<ProjectResponseDto> {
+    const model = await this.projectsService.create(dto);
+    return ProjectResponseDto.fromModel(model);
   }
 
   @Get()
   @ApiOperation({ summary: 'Lists all projects' })
-  findAll() {
-    return this.projectsService.findAll();
+  @ApiOkResponse({ type: ProjectResponseDto, isArray: true })
+  async findAll(): Promise<ProjectResponseDto[]> {
+    const models = await this.projectsService.findAll();
+    return models.map(ProjectResponseDto.fromModel);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Search a project by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.projectsService.findOne(id);
+  @ApiOkResponse({ type: ProjectResponseDto })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ProjectResponseDto> {
+    const model = await this.projectsService.findOne(id);
+    return ProjectResponseDto.fromModel(model);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a project' })
-  update(
+  @ApiOkResponse({ type: ProjectResponseDto })
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProjectDto,
-  ) {
-    return this.projectsService.update(id, dto);
+  ): Promise<ProjectResponseDto> {
+    const model = await this.projectsService.update(id, dto);
+    return ProjectResponseDto.fromModel(model);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Removes a project' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.projectsService.remove(id);
+  @ApiNoContentResponse()
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.projectsService.remove(id);
   }
 
   @Post(':projectId/employees/:employeeId')
   @ApiOperation({ summary: 'Add an employee to a project' })
-  addEmployee(
+  @ApiNoContentResponse()
+  async addEmployee(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('employeeId', ParseIntPipe) employeeId: number,
-  ) {
-    return this.projectsService.addEmployeeToProject(projectId, employeeId);
+  ): Promise<void> {
+    await this.projectsService.addEmployeeToProject(projectId, employeeId);
   }
 
   @Delete(':projectId/employees/:employeeId')
   @ApiOperation({ summary: 'Removes an employee from a project' })
-  removeEmployee(
+  @ApiNoContentResponse()
+  async removeEmployee(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('employeeId', ParseIntPipe) employeeId: number,
-  ) {
-    return this.projectsService.removeEmployeeFromProject(
+  ): Promise<void> {
+    await this.projectsService.removeEmployeeFromProject(
       projectId,
       employeeId,
     );
@@ -74,7 +98,15 @@ export class ProjectsController {
 
   @Get(':projectId/employees')
   @ApiOperation({ summary: 'Lists all employees from a project' })
-  listEmployees(@Param('projectId', ParseIntPipe) projectId: number) {
-    return this.projectsService.listEmployeesInProject(projectId);
+  @ApiOkResponse({ type: EmployeeResponseDto, isArray: true })
+  async listEmployees(
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<EmployeeResponseDto[]> {
+    const models = await this.projectsService.listEmployeesInProject(
+      projectId,
+    );
+    return models.map(EmployeeResponseDto.fromModel);
   }
 }
+
+

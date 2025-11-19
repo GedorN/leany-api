@@ -4,19 +4,18 @@ import { EmployeesService } from './employees.service';
 import { EmployeesController } from './employees.controller';
 import { Employee } from './entities/employee.entity';
 import { EmployeeProfile } from './entities/employee-profile.entity';
-import { Department } from '../departments/entities/department.entity';
-import { EmployeeProject } from '../projects/entities/employee-project.entity';
+import { EmployeesRepository } from './repositories/employees.repository';
+import { EmployeeProfilesRepository } from './repositories/employee-profiles.repository';
+import { DepartmentsModule } from '../departments/departments.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Employee,
-      EmployeeProfile,
-      Department,
-      EmployeeProject,
-    ]),
+    TypeOrmModule.forFeature([Employee, EmployeeProfile]),
+    DepartmentsModule,
+    ProjectsModule,
   ],
   controllers: [EmployeesController],
-  providers: [EmployeesService],
+  providers: [EmployeesService, EmployeesRepository, EmployeeProfilesRepository],
 })
 export class EmployeesModule {}
