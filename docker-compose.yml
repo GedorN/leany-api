@@ -1,16 +1,35 @@
+version: "3.8"
+
 services:
-  postgres:
-    image: postgres:16
-    container_name: employee-manager-postgres
-    restart: always
+  db:
+    image: postgres:16-alpine
+    container_name: nest_mvc_db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: employee_manager
-      POSTGRES_USER: employee_user
-      POSTGRES_PASSWORD: employee_pass
+      POSTGRES_DB: ${DB_DATABASE:-nestdb}
+      POSTGRES_USER: ${DB_USERNAME:-nest}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nestpassword}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest_mvc_api
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      # Override host to point to the db service name
+      DB_HOST: db
+      DB_PORT: 5432
+    ports:
+      - "3000:3000"
 
 volumes:
-  postgres_data:
+  db_data:

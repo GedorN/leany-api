@@ -29,6 +29,28 @@ yarn
 yarn db:up # para iniciar o banco de dados
 yarn start:dev # para iniciar o projeto NestJs
 ```
+### Rodando com Docker
+
+Este projeto inclui um `docker-compose.yml` para subir a API Nest e o banco Postgres de forma integrada.
+
+1. Copie o arquivo de variáveis de ambiente:
+
+```bash
+cp .env.example .env
+```
+2. Suba os containers
+```bash
+yarn docker:up
+```
+3. Para acompanhar os logs da API:
+```bash
+yarn docker:logs
+```
+
+4. Para derrubar os containers e remover o volume do banco:
+```bash
+yarn docker:down
+```
 
 ## ✨ Funcionalidades
 

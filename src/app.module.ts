@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { EmployeesModule } from './employees/employees.module';
 import { Employee } from './employees/entities/employee.entity';
 import { DepartmentsModule } from './departments/departments.module';
@@ -19,11 +17,11 @@ import { RolesGuard } from './auth/roles.guard';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'employee_user',
-      password: 'employee_pass',
-      database: 'employee_manager',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT ?? 5432),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
       entities: [Employee, EmployeeProfile, Department, Project, EmployeeProject],
       synchronize: true,
     }),
