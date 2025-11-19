@@ -21,6 +21,8 @@ import {
 } from '@nestjs/swagger';
 import { ProjectResponseDto } from './dto/project-response.dto';
 import { EmployeeResponseDto } from '../employees/dto/employee-response.dto';
+import { Roles } from '../auth/roles.decorator';
+import { ApiSecurity } from '@nestjs/swagger';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -28,6 +30,8 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Create a new project' })
   @ApiCreatedResponse({ type: ProjectResponseDto })
   async create(
@@ -56,6 +60,8 @@ export class ProjectsController {
   }
 
   @Patch(':id')
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Update a project' })
   @ApiOkResponse({ type: ProjectResponseDto })
   async update(
@@ -67,6 +73,8 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Removes a project' })
   @ApiNoContentResponse()
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -74,6 +82,8 @@ export class ProjectsController {
   }
 
   @Post(':projectId/employees/:employeeId')
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Add an employee to a project' })
   @ApiNoContentResponse()
   async addEmployee(
@@ -84,6 +94,8 @@ export class ProjectsController {
   }
 
   @Delete(':projectId/employees/:employeeId')
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Removes an employee from a project' })
   @ApiNoContentResponse()
   async removeEmployee(

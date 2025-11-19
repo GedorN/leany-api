@@ -18,6 +18,14 @@ async function bootstrap() {
     .setTitle('Employee Manager API')
     .setDescription('Employee management API')
     .setVersion('1.0')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'x-user-role',
+        in: 'header',
+      },
+        'x-user-role', // only for tests purpose
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

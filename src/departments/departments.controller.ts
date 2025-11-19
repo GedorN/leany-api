@@ -19,6 +19,8 @@ import {
   ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { DepartmentResponseDto } from './dto/department-response.dto';
+import { Roles } from '../auth/roles.decorator';
+import { ApiSecurity } from '@nestjs/swagger';
 
 @ApiTags('departments')
 @Controller('departments')
@@ -26,6 +28,8 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
+  @Roles('admin')
+  @ApiSecurity('x-user-role')
   @ApiOperation({ summary: 'Create a new department' })
   @ApiCreatedResponse({ type: DepartmentResponseDto })
   async create(
@@ -54,6 +58,8 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
+  @ApiSecurity('x-user-role')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update a department' })
   @ApiOkResponse({ type: DepartmentResponseDto })
   async update(
@@ -65,6 +71,8 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
+  @ApiSecurity('x-user-role')
+  @Roles('admin')
   @ApiOperation({ summary: 'Removes a department' })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.departmentsService.remove(id);

@@ -11,7 +11,8 @@ import { Project } from './projects/entities/project.entity';
 import { EmployeeProject } from './projects/entities/employee-project.entity';
 import { EmployeeProfile } from './employees/entities/employee-profile.entity';
 import { UtilsModule } from './utils/utils.module';
-
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './auth/roles.guard';
 
 
 @Module({
@@ -30,6 +31,12 @@ import { UtilsModule } from './utils/utils.module';
     DepartmentsModule,
     ProjectsModule,
     UtilsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}
