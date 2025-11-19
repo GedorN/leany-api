@@ -427,3 +427,60 @@ yarn test
 # Rodar um arquivo de teste específico (por exemplo, apenas o service de projects):
 yarn test projects.service
 ```
+
+## Configuração e proteção do `.env`
+
+A aplicação utiliza o `@nestjs/config` em conjunto com um schema de validação (Joi) para garantir que
+as variáveis de ambiente necessárias estejam definidas e com tipos válidos **antes** de subir a API.
+
+### Validação das variáveis de ambiente
+
+No `AppModule`, o `ConfigModule` é inicializado com um schema de validação:
+
+```ts
+ConfigModule.forRoot({
+  isGlobal: true,
+  validationSchema: configValidationSchema,
+});
+```
+
+O schema (por exemplo em src/config/config.validation.ts) garante que:
+
+* Campos obrigatórios como DB_HOST, DB_USERNAME, DB_PASSWORD, DB_DATABASE estejam presentes
+* DB_PORT seja numérico
+* NODE_ENV tenha um valor válido (development, test, production)
+* PORT seja numérico
+
+Se alguma variável obrigatória estiver faltando ou inválida, a aplicação não inicia e exibe um erro
+claro de configuração. Isso evita quebrar a aplicação em runtime por causa de .env mal configurado.
+
+### Comportamento do DB_HOST (dentro e fora do Docker)
+
+Para facilitar o desenvolvimento, o projeto foi configurado para funcionar bem tanto:
+
+* rodando a API localmente (yarn start:dev),
+* quanto rodando a API dentro do Docker (yarn docker:up).
+
+A ideia é:
+
+* **Fora do Docker** (rodando localmente):
+O banco Postgres está rodando em um container, mas exposto na porta 5432 da máquina host.
+Nesse caso, a API deve usar:
+ ```bash
+DB_HOST=localhost
+DB_PORT=5432
+ ```
+ * **Dentro do Docker** (serviço api do docker-compose):
+A API enxerga o banco pelo nome do serviço Docker (por exemplo, db).
+No `docker-compose.yml`, a seção da API sobrescreve o host:
+```yml
+api:
+  env_file:
+    - .env
+  environment:
+    DB_HOST: db
+    DB_PORT: 5432
+```
+Dessa forma:
+* fora do container → `DB_HOST=localhost` (lido do `.env`)
+* dentro do container → `DB_HOST=db` (nome do serviço do Postgres no `docker-compose`)

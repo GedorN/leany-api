@@ -11,10 +11,16 @@ import { EmployeeProfile } from './employees/entities/employee-profile.entity';
 import { UtilsModule } from './utils/utils.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './auth/roles.guard';
+import { configValidationSchema } from './config/config.validation';
+import { ConfigModule } from '@nestjs/config';
 
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: configValidationSchema,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

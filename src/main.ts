@@ -11,6 +11,9 @@ async function bootstrap() {
       whitelist: true,        // remove filds not present in DTOs
       forbidNonWhitelisted: true, // error if the request arrives with extra fields
       transform: true,        // string to int parse in params
+      transformOptions: {
+        enableImplicitConversion: true, // allows basic type conversion
+      },
     }),
   );
 
