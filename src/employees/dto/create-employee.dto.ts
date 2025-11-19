@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class CreateEmployeeDto {
-    @ApiProperty({ example: 'John Doe' })
+    @ApiProperty({ example: 'Gedor Neto' })
     @IsString()
     @MinLength(2)
     name: string;

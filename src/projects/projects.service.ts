@@ -1,4 +1,3 @@
-// src/projects/projects.service.ts
 import { Injectable } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';

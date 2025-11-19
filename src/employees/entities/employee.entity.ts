@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Department } from '../../departments/entities/department.entity';
-import { EmployeeProject } from 'src/projects/entities/employee-project.entity';
+import { EmployeeProject } from '../../projects/entities/employee-project.entity';
 import { EmployeeProfile } from './employee-profile.entity';
 
 @Entity('employees') 

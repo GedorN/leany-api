@@ -1,4 +1,3 @@
-// src/departments/departments.controller.ts
 import {
   Controller,
   Get,

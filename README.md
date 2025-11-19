@@ -343,3 +343,65 @@ Essa estrutura é a base para os endpoints de:
 - Detalhes do funcionário (`GET /employees/:id/details`)
 - Vínculo de funcionário a projeto (`POST /projects/:projectId/employees/:employeeId`)
 - Listagem de funcionários de um projeto (`GET /projects/:projectId/employees`)
+
+## Testes
+
+O projeto inclui testes unitários para as principais camadas da aplicação (services e controllers), garantindo que a regra de negócio e o tratamento HTTP estejam se comportando como esperado.
+
+### O que está coberto
+
+Atualmente, os seguintes componentes estão cobertos por testes unitários:
+
+- **Employees**
+  - `EmployeesService`
+    - Criação de funcionário (fluxo feliz e validação de existência de department)
+    - Listagem de todos os funcionários
+    - Busca de funcionário por ID (encontrado / não encontrado)
+  - `EmployeesController`
+    - Mapeamento de chamadas HTTP para o service
+    - Conversão dos models para:
+      - `EmployeeResponseDto`
+      - `EmployeeProfileResponseDto`
+      - `EmployeeDetailsResponseDto`
+
+- **Departments**
+  - `DepartmentsService`
+    - Criação de departamento (com e sem descrição)
+    - Listagem de todos os departamentos
+    - Busca de departamento por ID (encontrado / não encontrado)
+    - Atualização de departamento (tratando campos opcionais e caso não encontrado)
+    - Remoção de departamento (sucesso / não encontrado)
+  - `DepartmentsController`
+    - Mapeamento HTTP → service
+    - Conversão dos models para `DepartmentResponseDto`
+
+- **Projects**
+  - `ProjectsService`
+    - Criação de projeto (tratando campos nulos/opcionais)
+    - Listagem de todos os projetos
+    - Busca de projeto por ID (encontrado / não encontrado)
+    - Atualização de projeto (tratando campos opcionais e caso não encontrado)
+    - Remoção de projeto (sucesso / não encontrado)
+    - Gerenciamento de relacionamentos:
+      - `addEmployeeToProject`
+      - `removeEmployeeFromProject`
+      - `listEmployeesInProject`
+  - `ProjectsController`
+    - Mapeamento HTTP → service
+    - Conversão dos models para:
+      - `ProjectResponseDto`
+      - `EmployeeResponseDto` (na listagem de funcionários de um projeto)
+
+Em todos os testes, os repositórios são **mockados**, então a suíte roda rápido e **não depende de banco de dados**.
+
+### Como rodar os testes
+
+Primeiro, instale as dependências:
+
+```bash
+yarn install
+# Rodar toda a suíte de testes:
+yarn test
+# Rodar um arquivo de teste específico (por exemplo, apenas o service de projects):
+yarn test projects.service
+```
